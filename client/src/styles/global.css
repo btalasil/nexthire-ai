@@ -3,3 +3,25 @@
 @tailwind utilities;
 
 .container { @apply max-w-6xl mx-auto px-4; }
+/* Glassmorphic Card Style */
+.glass-card {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.glass-card {
+  @apply transition-all duration-300;
+}
+
+.dark .glass-card {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(14px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.light .glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}

@@ -14,17 +14,28 @@ export const createJob = async (req, res, next) => {
   } catch (e) { next(e); }
 };
 
-export const updateJob = async (req, res, next) => {
+export const updateJob = async (req, res) => {
   try {
-    const job = await Job.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
-      req.body,
-      { new: true }
-    );
-    if (!job) return res.status(404).json({ message: 'Not found' });
+    const job = await Job.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!job) return res.status(404).json({ message: "Job not found" });
+
+    job.company = req.body.company ?? job.company;
+    job.role = req.body.role ?? job.role;
+    job.link = req.body.link ?? job.link;               // ✅ add this
+    job.status = req.body.status ?? job.status;
+    job.appliedAt = req.body.appliedAt ?? job.appliedAt; // ✅ add this
+    job.tags = req.body.tags ?? job.tags;
+    job.notes = req.body.notes ?? job.notes;
+
+    await job.save();
     res.json(job);
-  } catch (e) { next(e); }
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
 };
+
 
 export const deleteJob = async (req, res, next) => {
   try {

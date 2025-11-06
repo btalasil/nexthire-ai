@@ -1,40 +1,50 @@
-import ResumeAnalysis from '../models/ResumeAnalysis.js';
-import { extractAndAnalyze } from '../services/resumeParser.js';
+import { extractAndAnalyze } from "../services/resumeParser.js";
 
-// a tiny default dictionary; expand as needed or make it user-provided
-const DEFAULT_SKILLS = [
-  'javascript','react','node','express','mongodb','mongoose',
-  'java','spring','docker','aws','git','rest','graphql','kubernetes','sql'
-];
-
-export const uploadResume = async (req, res, next) => {
+// ✅ Handles Resume Upload + JD matching in one request
+export async function uploadResume(req, res) {
   try {
-    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
-    const { text, found, missing, score } = await extractAndAnalyze(req.file.buffer, DEFAULT_SKILLS);
-    const doc = await ResumeAnalysis.create({
-      userId: req.user._id,
-      extractedSkills: found,
-      missingKeywords: missing,
-      score,
-      rawText: text
+    const fileBuffer = req.file?.buffer;
+    const jdText = req.body?.jd || "";
+
+    if (!fileBuffer) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const result = await extractAndAnalyze(fileBuffer, jdText);
+
+    return res.status(201).json(result);
+  } catch (err) {
+    console.error("Resume Upload Error:", err);
+    return res.status(500).json({ error: "Failed to analyze resume" });
+  }
+}
+
+// ✅ Standalone JD comparison (optional, still supported)
+export async function compareWithJD(req, res) {
+  try {
+    const { resumeText, jdText } = req.body;
+
+    if (!resumeText || !jdText) {
+      return res.status(400).json({ error: "Resume text & JD required" });
+    }
+
+    // Extract keywords from JD
+    const jdWords = jdText
+      .toLowerCase()
+      .match(/\b[a-zA-Z]+\b/g)
+      .slice(0, 50);
+
+    const missing = jdWords.filter((word) => !resumeText.toLowerCase().includes(word));
+    const score = Math.max(0, 100 - missing.length);
+
+    return res.json({
+      jdKeywords: jdWords,
+      missing,
+      score
     });
-    res.status(201).json(doc);
-  } catch (e) { next(e); }
-};
 
-export const compareWithJD = async (req, res, next) => {
-  try {
-    const { jobDescription = '' } = req.body;
-    const jd = jobDescription.toLowerCase();
-    const last = await ResumeAnalysis.findOne({ userId: req.user._id }).sort({ createdAt: -1 });
-    if (!last) return res.status(400).json({ message: 'Upload a resume first' });
-
-    const jdKeywords = new Set();
-    DEFAULT_SKILLS.forEach(k => { if (jd.includes(k)) jdKeywords.add(k); });
-
-    const missing = Array.from(jdKeywords).filter(k => !last.extractedSkills.map(s=>s.toLowerCase()).includes(k));
-    const score = Math.round(((jdKeywords.size - missing.length) / Math.max(jdKeywords.size, 1)) * 100);
-
-    res.json({ jdKeywords: Array.from(jdKeywords), missing, score });
-  } catch (e) { next(e); }
-};
+  } catch (err) {
+    console.error("JD Compare Error:", err);
+    return res.status(500).json({ error: "JD compare failed" });
+  }
+}
