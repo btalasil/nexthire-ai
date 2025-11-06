@@ -8,7 +8,7 @@ router.use(protect);
 
 router.get('/', listJobs);
 router.post('/', createJob);
-router.put('/:id', updateJob);   // ✅ change to PUT
+router.put('/:id', updateJob);
 router.delete('/:id', deleteJob);
 
 export default router;
