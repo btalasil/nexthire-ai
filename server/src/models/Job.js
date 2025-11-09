@@ -16,3 +16,4 @@ const JobSchema = new mongoose.Schema(
 
 // ✅ Important fix: reuse model if already compiled
 export default mongoose.models.Job || mongoose.model("Job", JobSchema);
+                                                                                                                                               

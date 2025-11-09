@@ -1,50 +1,77 @@
-import { extractAndAnalyze } from "../services/resumeParser.js";
+import { parsePdfBuffer } from "../utils/pdf.js";
+import {
+  analyzeResumeWithGemini,
+  extractJDKeywordsWithGemini,
+} from "../services/geminiService.js";
 
-// ✅ Handles Resume Upload + JD matching in one request
-export async function uploadResume(req, res) {
+// POST /api/resume/upload
+export const uploadResume = async (req, res) => {
   try {
-    const fileBuffer = req.file?.buffer;
-    const jdText = req.body?.jd || "";
-
-    if (!fileBuffer) {
+    if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const result = await extractAndAnalyze(fileBuffer, jdText);
+    // 1) Extract text from PDF
+    const resumeText = await parsePdfBuffer(req.file.buffer);
 
-    return res.status(201).json(result);
-  } catch (err) {
-    console.error("Resume Upload Error:", err);
-    return res.status(500).json({ error: "Failed to analyze resume" });
-  }
-}
+    // 2) Optional JD (to help the LLM score relevance)
+    const jd = req.body?.jd || "";
 
-// ✅ Standalone JD comparison (optional, still supported)
-export async function compareWithJD(req, res) {
-  try {
-    const { resumeText, jdText } = req.body;
+    // 3) Ask Gemini to extract structured info + score
+    const llm = await analyzeResumeWithGemini(resumeText, jd);
 
-    if (!resumeText || !jdText) {
-      return res.status(400).json({ error: "Resume text & JD required" });
+    // 4) Basic deterministic match against JD keywords (fallback & extra signal)
+    let missingKeywords = [];
+    if (jd) {
+      const jdKeywords = await extractJDKeywordsWithGemini(jd);
+      const resumeLower = resumeText.toLowerCase();
+      missingKeywords = jdKeywords.filter((kw) => !resumeLower.includes(kw.toLowerCase()));
+      // merge LLM missing if present
+      if (Array.isArray(llm.missingKeywords)) {
+        const merged = new Set([...missingKeywords, ...llm.missingKeywords]);
+        missingKeywords = [...merged];
+      }
     }
 
-    // Extract keywords from JD
-    const jdWords = jdText
-      .toLowerCase()
-      .match(/\b[a-zA-Z]+\b/g)
-      .slice(0, 50);
-
-    const missing = jdWords.filter((word) => !resumeText.toLowerCase().includes(word));
-    const score = Math.max(0, 100 - missing.length);
-
-    return res.json({
-      jdKeywords: jdWords,
-      missing,
-      score
+    res.json({
+      ...llm,
+      missingKeywords,
+      resumeText, // return it so client can reuse for /compare
     });
-
   } catch (err) {
-    console.error("JD Compare Error:", err);
-    return res.status(500).json({ error: "JD compare failed" });
+    console.error(err);
+    res.status(500).json({ error: "Resume analysis failed" });
   }
-}
+};
+
+// POST /api/resume/compare
+export const compareWithJD = async (req, res) => {
+  try {
+    const { jd = "", resumeText = "", resumeSkills = [] } = req.body || {};
+    if (!jd) return res.status(400).json({ error: "JD required" });
+
+    const jdKeywords = await extractJDKeywordsWithGemini(jd);
+
+    // Build a simple match score by set overlap (resumeText + resumeSkills)
+    const resumeBag = new Set(
+      [
+        ...(resumeSkills || []).map((s) => s.toLowerCase()),
+        ...resumeText.toLowerCase().split(/[^a-z0-9+#.]/gi),
+      ].filter(Boolean)
+    );
+
+    const hits = jdKeywords.filter((kw) => resumeBag.has(kw.toLowerCase()));
+    const missing = jdKeywords.filter((kw) => !resumeBag.has(kw.toLowerCase()));
+
+    const matchScore = Math.round((hits.length / Math.max(1, jdKeywords.length)) * 100);
+
+    res.json({
+      jdKeywords,
+      missingSkills: missing,
+      matchScore,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Comparison failed" });
+  }
+};
