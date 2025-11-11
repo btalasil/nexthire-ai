@@ -11,12 +11,12 @@ const app = express();
 
 app.use(express.json());
 
-// ✅ FIXED CORS
+// ✅ Correct & safe CORS setup
 app.use(
   cors({
     origin: [
-      "http://localhost:5173",
-      "https://nexthire-ai.onrender.com"
+      "http://localhost:5173",            // local dev
+      "https://nexthire-ai.onrender.com"  // your deployed frontend
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
@@ -24,6 +24,7 @@ app.use(
   })
 );
 
+// ✅ Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/resume", resumeRoutes);
