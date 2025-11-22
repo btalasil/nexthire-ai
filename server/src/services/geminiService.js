@@ -1,76 +1,82 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// ✅ load env safely
-function getAI() {
-  const apiKey = process.env.GOOGLE_API_KEY;
-
-  if (!apiKey) {
-    console.error("[❌ Gemini] GOOGLE_API_KEY is missing");
-    throw new Error("GOOGLE_API_KEY missing");
-  }
-
-  return new GoogleGenerativeAI(apiKey);
+if (!process.env.GOOGLE_API_KEY) {
+  throw new Error("GOOGLE_API_KEY missing.");
 }
 
-// ✅ WORKING FREE MODEL
-const MODEL = "gemini-1.5-flash-8b";
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
-// ✅ Enforce clean JSON
-async function generateJSON(prompt) {
-  const genAI = getAI();
-  const model = genAI.getGenerativeModel({
-    model: MODEL,
-    generationConfig: { responseMimeType: "application/json" }
-  });
+// Use only supported models
+const MODEL = "gemini-2.5-flash";
 
-  const resp = await model.generateContent(prompt);
-  let raw = resp.response.text();
-
-  raw = raw.replace(/```json|```/g, "").trim();
-
+// ------------------------------------------------------------
+// Core AI call
+// ------------------------------------------------------------
+async function callGemini(prompt) {
   try {
-    return JSON.parse(raw);
-  } catch {
-    console.error("Gemini JSON parse failed. Raw:", raw);
-    throw new Error("Failed to parse Gemini JSON");
+    const model = genAI.getGenerativeModel({ model: MODEL });
+
+    // New SDK syntax
+    const result = await model.generateContent(prompt);
+
+    let raw = result.response.text().trim();
+
+    // Remove markdown code blocks
+    raw = raw.replace(/```json|```/g, "").trim();
+
+    // First try direct parse
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (match) return JSON.parse(match[0]);
+
+      throw new Error("AI returned invalid JSON:\n" + raw);
+    }
+  } catch (error) {
+    console.error("Gemini error:", error);
+    throw error;
   }
 }
 
-// ✅ analyze resume
-export async function analyzeResumeWithGemini(resumeText, jd = "") {
+// ------------------------------------------------------------
+// Resume analysis
+// ------------------------------------------------------------
+export async function analyzeResumeWithGemini(resume, jd = "") {
   const prompt = `
-Return STRICT JSON. Analyze the resume and (optional) JD.
+You are an expert ATS resume evaluator.
+
+Analyze the resume using deep semantic understanding.
+Do NOT rely on keyword matching — focus on meaning.
+
+Return ONLY JSON in this exact structure:
+
 {
   "summary": string,
-  "extractedSkills": string[],
+  "skillsFound": string[],
+  "missingSkills": string[],
   "highlights": string[],
-  "score": number,
-  "missingKeywords": string[]
+  "score": number
 }
 
 RESUME:
-${resumeText}
+${resume}
 
-JD:
+JOB DESCRIPTION:
 ${jd}
   `;
 
-  const data = await generateJSON(prompt);
-
-  return {
-    summary: data.summary || "",
-    extractedSkills: Array.isArray(data.extractedSkills) ? data.extractedSkills : [],
-    highlights: Array.isArray(data.highlights) ? data.highlights.slice(0, 6) : [],
-    score: typeof data.score === "number" ? data.score : 0,
-    missingKeywords: Array.isArray(data.missingKeywords) ? data.missingKeywords : [],
-  };
+  return await callGemini(prompt);
 }
 
-// ✅ JD keyword extraction
+// ------------------------------------------------------------
+// JD keyword extraction
+// ------------------------------------------------------------
 export async function extractJDKeywordsWithGemini(jdText) {
   const prompt = `
-Extract 10–25 important keywords from this JD.
-Return STRICT JSON:
+Extract all technical skills from this job description.
+Return ONLY JSON:
+
 {
   "keywords": string[]
 }
@@ -79,9 +85,6 @@ JD:
 ${jdText}
   `;
 
-  const data = await generateJSON(prompt);
-
-  return Array.isArray(data.keywords)
-    ? [...new Set(data.keywords.map(k => k.trim()).filter(Boolean))]
-    : [];
+  const result = await callGemini(prompt);
+  return result.keywords || [];
 }

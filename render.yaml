@@ -15,9 +15,7 @@ services:
       - key: CLIENT_URL
         sync: false
       - key: GOOGLE_API_KEY
-        sync: false
-      - key: GEMINI_API_KEY
-        sync: false
+        sync: false  # ONLY THIS ONE IS NEEDED
 
 staticSites:
   - name: nexthire-ai-frontend

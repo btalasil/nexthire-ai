@@ -1,77 +1,105 @@
+// ------------------------------------------------------------
+// Resume Controller (Final Version - Gemini 2.5 Flash Working)
+// ------------------------------------------------------------
+
 import { parsePdfBuffer } from "../utils/pdf.js";
 import {
   analyzeResumeWithGemini,
   extractJDKeywordsWithGemini,
 } from "../services/geminiService.js";
 
-// POST /api/resume/upload
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+// Gemini client
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+
+// Supported model (from listModels.js results)
+const MODEL = "gemini-2.5-flash";
+
+// ------------------------------------------------------------
+// 1️⃣ UPLOAD + ANALYZE RESUME
+// ------------------------------------------------------------
 export const uploadResume = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    // 1) Extract text from PDF
+    // Convert PDF to clean text
     const resumeText = await parsePdfBuffer(req.file.buffer);
 
-    // 2) Optional JD (to help the LLM score relevance)
+    // Optional JD input
     const jd = req.body?.jd || "";
 
-    // 3) Ask Gemini to extract structured info + score
-    const llm = await analyzeResumeWithGemini(resumeText, jd);
+    // Full resume analysis
+    const ai = await analyzeResumeWithGemini(resumeText, jd);
 
-    // 4) Basic deterministic match against JD keywords (fallback & extra signal)
-    let missingKeywords = [];
+    // Extract JD keywords if JD is provided
+    let jdKeywords = [];
     if (jd) {
-      const jdKeywords = await extractJDKeywordsWithGemini(jd);
-      const resumeLower = resumeText.toLowerCase();
-      missingKeywords = jdKeywords.filter((kw) => !resumeLower.includes(kw.toLowerCase()));
-      // merge LLM missing if present
-      if (Array.isArray(llm.missingKeywords)) {
-        const merged = new Set([...missingKeywords, ...llm.missingKeywords]);
-        missingKeywords = [...merged];
-      }
+      jdKeywords = await extractJDKeywordsWithGemini(jd);
     }
 
-    res.json({
-      ...llm,
-      missingKeywords,
-      resumeText, // return it so client can reuse for /compare
+    return res.json({
+      ...ai,
+      resumeText,
+      jdKeywords,
     });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Resume analysis failed" });
+    console.error("Resume upload error:", err);
+    return res.status(500).json({ error: "Resume analysis failed" });
   }
 };
 
-// POST /api/resume/compare
+// ------------------------------------------------------------
+// 2️⃣ COMPARE RESUME WITH JOB DESCRIPTION
+// ------------------------------------------------------------
 export const compareWithJD = async (req, res) => {
   try {
-    const { jd = "", resumeText = "", resumeSkills = [] } = req.body || {};
-    if (!jd) return res.status(400).json({ error: "JD required" });
+    const { jd = "", resumeText = "" } = req.body || {};
 
-    const jdKeywords = await extractJDKeywordsWithGemini(jd);
+    if (!jd) {
+      return res.status(400).json({ error: "JD required" });
+    }
 
-    // Build a simple match score by set overlap (resumeText + resumeSkills)
-    const resumeBag = new Set(
-      [
-        ...(resumeSkills || []).map((s) => s.toLowerCase()),
-        ...resumeText.toLowerCase().split(/[^a-z0-9+#.]/gi),
-      ].filter(Boolean)
-    );
+    // Extract JD keywords using AI
+    const keywords = await extractJDKeywordsWithGemini(jd);
 
-    const hits = jdKeywords.filter((kw) => resumeBag.has(kw.toLowerCase()));
-    const missing = jdKeywords.filter((kw) => !resumeBag.has(kw.toLowerCase()));
+    const prompt = `
+Compare this resume to the job description and score match quality.
 
-    const matchScore = Math.round((hits.length / Math.max(1, jdKeywords.length)) * 100);
+Return ONLY JSON:
+{
+  "matchScore": number,
+  "jdKeywords": string[],
+  "missingSkills": string[],
+  "recommendations": string[]
+}
 
-    res.json({
-      jdKeywords,
-      missingSkills: missing,
-      matchScore,
+RESUME:
+${resumeText}
+
+JOB DESCRIPTION:
+${jd}
+`;
+
+    const model = genAI.getGenerativeModel({ model: MODEL });
+
+    const result = await model.generateContent(prompt);
+
+    let raw = result.response.text().trim();
+    raw = raw.replace(/```json|```/g, "").trim();
+
+    const parsed = JSON.parse(raw);
+
+    return res.json({
+      ...parsed,
+      jdKeywords: keywords,
     });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Comparison failed" });
+    console.error("Comparison error:", err);
+    return res.status(500).json({ error: "Comparison failed" });
   }
 };

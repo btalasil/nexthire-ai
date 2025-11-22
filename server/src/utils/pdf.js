@@ -1,8 +1,13 @@
 import pdfParse from "pdf-parse";
 
-// Buffer -> text
 export async function parsePdfBuffer(buffer) {
   const data = await pdfParse(buffer);
-  // normalize whitespace a bit
-  return (data.text || "").replace(/\r/g, "").trim();
+
+  let text = (data.text || "")
+    .replace(/\r/g, " ")
+    .replace(/\n+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return text;
 }

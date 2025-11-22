@@ -7,8 +7,8 @@ export default function Resume() {
   const [file, setFile] = useState(null);
   const [progress, setProgress] = useState(0);
   const [jd, setJd] = useState("");
-  const [result, setResult] = useState(null);     // resume analysis result
-  const [compare, setCompare] = useState(null);   // JD comparison result
+  const [result, setResult] = useState(null);
+  const [compare, setCompare] = useState(null);
   const [err, setErr] = useState("");
   const [loadingUpload, setLoadingUpload] = useState(false);
   const [loadingCompare, setLoadingCompare] = useState(false);
@@ -35,8 +35,12 @@ export default function Resume() {
     e.preventDefault();
     onFile(e.dataTransfer.files?.[0]);
   };
+
   const onDrag = (e) => e.preventDefault();
 
+  // --------------------------
+  // UPLOAD & ANALYZE RESUME
+  // --------------------------
   const upload = async () => {
     try {
       setErr("");
@@ -47,7 +51,7 @@ export default function Resume() {
 
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("jd", jd); // optional—backend can use it to enrich scoring
+      fd.append("jd", jd);
 
       const { data } = await api.post("/api/resume/upload", fd, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -57,7 +61,6 @@ export default function Resume() {
       });
 
       setResult(data);
-      // console.log("Resume Response:", data);
     } catch (e) {
       setErr(e?.response?.data?.error || "Upload failed");
     } finally {
@@ -65,6 +68,9 @@ export default function Resume() {
     }
   };
 
+  // --------------------------
+  // COMPARE WITH JD
+  // --------------------------
   const doCompare = async () => {
     try {
       setErr("");
@@ -72,13 +78,11 @@ export default function Resume() {
 
       const { data } = await api.post("/api/resume/compare", {
         jd,
-        // send the resume text/skills we already have from upload:
         resumeText: result?.resumeText || "",
-        resumeSkills: result?.extractedSkills || [],
+        resumeSkills: result?.skillsFound || [],
       });
 
       setCompare(data);
-      // console.log("Compare Response:", data);
     } catch (e) {
       setErr(e?.response?.data?.error || "Compare failed");
     } finally {
@@ -90,7 +94,7 @@ export default function Resume() {
     <div className="space-y-4">
       <h2 className="text-2xl font-bold">Resume Analyzer</h2>
 
-      {/* Dropzone */}
+      {/* FILE DROPZONE */}
       <div
         ref={dropRef}
         onDrop={onDrop}
@@ -103,12 +107,10 @@ export default function Resume() {
           accept="application/pdf"
           onChange={(e) => onFile(e.target.files[0])}
         />
-        {file && (
-          <div className="mt-2 text-sm opacity-80">Selected: {file.name}</div>
-        )}
+        {file && <div className="mt-2 text-sm opacity-80">Selected: {file.name}</div>}
       </div>
 
-      {/* Upload button */}
+      {/* UPLOAD BUTTON */}
       <button
         className="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
         onClick={upload}
@@ -120,7 +122,7 @@ export default function Resume() {
       {progress > 0 && progress < 100 && <div>Uploading... {progress}%</div>}
       {err && <div style={{ color: "red" }}>{err}</div>}
 
-      {/* JD box */}
+      {/* JOB DESCRIPTION TEXTAREA */}
       <textarea
         className="w-full border rounded p-2 bg-white"
         placeholder="Paste job description here..."
@@ -129,6 +131,7 @@ export default function Resume() {
         onChange={(e) => setJd(e.target.value)}
       />
 
+      {/* COMPARE BUTTON */}
       <button
         className="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
         onClick={doCompare}
@@ -137,28 +140,30 @@ export default function Resume() {
         {loadingCompare ? "Comparing..." : "Compare with JD"}
       </button>
 
-      {/* ✅ Resume Results */}
+      {/* ------------------------------------------------------
+          AI RESUME RESULTS BLOCK
+      ------------------------------------------------------ */}
       {result && (
         <div className="mt-4 p-4 border rounded bg-white">
-          <h3 className="text-xl font-semibold">Resume Results</h3>
-          <p>
-            <b>Score:</b> {result.score}%
-          </p>
+          <h3 className="text-xl font-semibold">Resume Results (AI Powered)</h3>
+
+          <p><b>AI Score:</b> {result.score}%</p>
+
+          <p className="mt-2"><b>Summary:</b><br />{result.summary}</p>
+
           <p className="mt-2">
             <b>Skills Found:</b>{" "}
-            {result.extractedSkills?.length
-              ? result.extractedSkills.join(", ")
-              : "None"}
+            {result.skillsFound?.length ? result.skillsFound.join(", ") : "None"}
           </p>
+
           <p className="mt-2">
-            <b>Missing vs JD:</b>{" "}
-            {result.missingKeywords?.length
-              ? result.missingKeywords.join(", ")
-              : "None"}
+            <b>Missing Skills:</b>{" "}
+            {result.missingSkills?.length ? result.missingSkills.join(", ") : "None"}
           </p>
+
           {result.highlights?.length ? (
-            <div className="mt-2">
-              <b>Highlights:</b>
+            <div className="mt-3">
+              <b>AI Highlights:</b>
               <ul className="list-disc list-inside text-sm">
                 {result.highlights.map((h, i) => (
                   <li key={i}>{h}</li>
@@ -166,30 +171,53 @@ export default function Resume() {
               </ul>
             </div>
           ) : null}
+
+          {result.recommendations?.length ? (
+            <div className="mt-3">
+              <b>AI Recommendations:</b>
+              <ul className="list-disc list-inside text-sm">
+                {result.recommendations.map((r, i) => (
+                  <li key={i}>{r}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
       )}
 
-      {/* ✅ JD Comparison Results */}
+      {/* ------------------------------------------------------
+          AI JOB MATCH RESULTS BLOCK
+      ------------------------------------------------------ */}
       {compare && (
         <div className="mt-4 p-4 border rounded bg-white">
-          <h3 className="text-xl font-semibold">Job Match Results</h3>
-          <p>
+          <h3 className="text-xl font-semibold">Job Match Results (AI Powered)</h3>
+
+          <p><b>Match Score:</b> {compare.matchScore}%</p>
+
+          <p className="mt-2">
             <b>JD Keywords:</b>{" "}
             {compare.jdKeywords?.length ? compare.jdKeywords.join(", ") : "None"}
           </p>
-          <p>
+
+          <p className="mt-2">
             <b>Missing Skills:</b>{" "}
-            {compare.missingSkills?.length
-              ? compare.missingSkills.join(", ")
-              : "None"}
+            {compare.missingSkills?.length ? compare.missingSkills.join(", ") : "None"}
           </p>
-          <p>
-            <b>Match Score:</b> {compare.matchScore}%
-          </p>
+
+          {compare.recommendations?.length ? (
+            <div className="mt-3">
+              <b>AI Recommendations:</b>
+              <ul className="list-disc list-inside text-sm">
+                {compare.recommendations.map((r, i) => (
+                  <li key={i}>{r}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
       )}
 
-      {/* ✅ Debug JSON */}
+      {/* DEBUG OUTPUT */}
       {result && (
         <div className="mt-4 p-4 bg-gray-100 border rounded text-xs whitespace-pre-wrap">
           <b>Debug JSON</b>

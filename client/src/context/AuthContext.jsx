@@ -8,33 +8,37 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
-  // Load current user if token exists
-  useEffect(() => {
-    async function loadUser() {
-      const t = getToken();
-      if (!t) {
-        setLoadingUser(false);
-        return;
-      }
-
-      try {
-        const res = await api.get("/api/auth/me");
-        setUser(res.data);
-      } catch (err) {
-        console.error("FAILED /me:", err);
-        logout();
-      }
-
+  // 🔥 Make loadUser reusable so login() can call it too
+  const loadUser = async () => {
+    const t = getToken();
+    if (!t) {
       setLoadingUser(false);
+      return;
     }
 
+    try {
+      const res = await api.get("/api/auth/me");
+      setUser(res.data);
+    } catch (err) {
+      console.error("FAILED /me:", err);
+      logout();
+    }
+
+    setLoadingUser(false);
+  };
+
+  // Load user on first page load
+  useEffect(() => {
     loadUser();
   }, []);
 
-  // LOGIN — update localStorage + state
-  const login = (t) => {
+  // LOGIN — after saving token load user immediately
+  const login = async (t) => {
     saveToken(t);
     setToken(t);
+
+    setLoadingUser(true);  // 🔥 Important: reset loader
+    await loadUser();      // 🔥 Now navbar updates instantly
   };
 
   const logout = () => {

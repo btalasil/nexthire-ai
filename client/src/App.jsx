@@ -7,6 +7,7 @@ import Register from "./pages/Register.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Jobs from "./pages/Jobs.jsx";
 import Resume from "./pages/Resume.jsx";
+import Profile from "./pages/Profile.jsx";
 
 import { useAuth } from "./context/AuthContext.jsx";
 
@@ -26,7 +27,6 @@ export default function App() {
   const Authed = ({ children }) => (token ? children : <Navigate to="/login" />);
   const Unauthed = ({ children }) => (!token ? children : <Navigate to="/dashboard" />);
 
-  // ❗ Hide navbar on login & register
   const hideNavbar = ["/login", "/register"].includes(location.pathname);
 
   return (
@@ -34,8 +34,8 @@ export default function App() {
       <CssBaseline />
 
       <div className={mode === "dark" ? "bg-gray-900 text-white min-h-screen" : "bg-gray-100 text-black min-h-screen"}>
-        
-        {/* NAVBAR — only if NOT login/register */}
+
+        {/* NAVBAR */}
         {!hideNavbar && (
           <header
             className={`flex justify-between p-4 px-6 shadow ${
@@ -45,6 +45,8 @@ export default function App() {
             <h2 className="text-xl font-bold">CareerPilot</h2>
 
             <nav className="flex items-center gap-4">
+
+              {/* ✔ KEEP THESE LINKS */}
               <Link to="/dashboard">Dashboard</Link>
               <Link to="/jobs">Jobs</Link>
               <Link to="/resume">Resume</Link>
@@ -66,12 +68,29 @@ export default function App() {
                     </Avatar>
                   </IconButton>
 
+                  {/* ✅ UPDATED DROPDOWN (ONLY PROFILE + LOGOUT) */}
                   <Menu open={!!anchor} anchorEl={anchor} onClose={() => setAnchor(null)}>
                     <MenuItem disabled>{user?.email}</MenuItem>
-                    <MenuItem onClick={() => { navigate("/dashboard"); setAnchor(null); }}>Dashboard</MenuItem>
-                    <MenuItem onClick={() => { navigate("/jobs"); setAnchor(null); }}>Jobs</MenuItem>
-                    <MenuItem onClick={() => { navigate("/resume"); setAnchor(null); }}>Resume</MenuItem>
-                    <MenuItem onClick={() => { logout(); navigate("/login"); setAnchor(null); }}>Logout</MenuItem>
+
+                    <MenuItem
+                      onClick={() => {
+                        navigate("/profile");
+                        setAnchor(null);
+                      }}
+                    >
+                      My Profile
+                    </MenuItem>
+
+                    <MenuItem
+                      onClick={() => {
+                        logout();
+                        navigate("/login");
+                        setAnchor(null);
+                      }}
+                      sx={{ color: "red" }}
+                    >
+                      Logout
+                    </MenuItem>
                   </Menu>
                 </>
               )}
@@ -87,6 +106,7 @@ export default function App() {
           <Route path="/dashboard" element={<Authed><Dashboard mode={mode} /></Authed>} />
           <Route path="/jobs" element={<Authed><Jobs mode={mode} /></Authed>} />
           <Route path="/resume" element={<Authed><Resume mode={mode} /></Authed>} />
+          <Route path="/profile" element={<Authed><Profile mode={mode} /></Authed>} />
         </Routes>
 
       </div>
