@@ -1,59 +1,208 @@
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import User from "../models/User.js";
+import crypto from "crypto";
+import nodemailer from "nodemailer";
+
+// -----------------------------------------------------
+// GENERATE ACCESS TOKEN
+// -----------------------------------------------------
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "15m" });
+};
+
+// -----------------------------------------------------
+// SEND TOKENS (ACCESS + REFRESH)
+// -----------------------------------------------------
 const sendTokens = (res, user) => {
-  const accessToken = generateToken(user._id, '15m');
-  const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' });
-  res.cookie('refreshToken', refreshToken, {
+  const accessToken = generateToken(user._id);
+
+  const refreshToken = jwt.sign(
+    { id: user._id },
+    process.env.JWT_REFRESH_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 7*24*60*60*1000
+    sameSite: "lax",
+    secure: false,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   });
+
   return accessToken;
 };
 
-import bcrypt from 'bcryptjs';
-import User from '../models/User.js';
-import { generateToken } from '../utils/generateToken.js';
-import jwt from 'jsonwebtoken';
+// -----------------------------------------------------
+// EMAIL TRANSPORTER (GMAIL SMTP + APP PASSWORD)
+// -----------------------------------------------------
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT),
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS, // Gmail app password
+  },
+});
 
-export const register = async (req, res, next) => {
+// -----------------------------------------------------
+// REGISTER
+// -----------------------------------------------------
+export const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-    if (!name || !email || !password) return res.status(400).json({ message: 'Missing fields' });
+
+    if (!name || !email || !password)
+      return res.status(400).json({ message: "Missing fields" });
+
     const exists = await User.findOne({ email });
-    if (exists) return res.status(400).json({ message: 'Email already registered' });
+    if (exists)
+      return res.status(400).json({ message: "Email already registered" });
+
     const hash = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, password: hash });
+
+    const user = await User.create({
+      name,
+      email,
+      password: hash,
+    });
+
     const token = sendTokens(res, user);
-    res.json({ user: { _id: user._id, name: user.name, email: user.email }, token });
-  } catch (e) { next(e); }
+
+    res.json({
+      user: { _id: user._id, name: user.name, email: user.email },
+      token,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
-export const login = async (req, res, next) => {
+// -----------------------------------------------------
+// LOGIN
+// -----------------------------------------------------
+export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'Invalid credentials' });
+    if (!user)
+      return res.status(400).json({ message: "Invalid credentials" });
+
     const ok = await bcrypt.compare(password, user.password);
-    if (!ok) return res.status(400).json({ message: 'Invalid credentials' });
+    if (!ok)
+      return res.status(400).json({ message: "Invalid credentials" });
+
     const token = sendTokens(res, user);
-    res.json({ user: { _id: user._id, name: user.name, email: user.email }, token });
-  } catch (e) { next(e); }
+
+    res.json({
+      user: { _id: user._id, name: user.name, email: user.email },
+      token,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
-export const refreshToken = async (req, res, next) => {
-  try {
-    const token = req.cookies?.refreshToken
-    if (!token) return res.status(401).json({ message: 'No refresh token' })
-    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET)
-    const access = generateToken(decoded.id, '15m')
-    res.json({ token: access })
-  } catch (e) {
-    e.status = 401
-    next(e)
-  }
-}
+// -----------------------------------------------------
+// CURRENT USER
+// -----------------------------------------------------
+export const getMe = async (req, res) => {
+  res.json(req.user);
+};
 
-export const logout = async (_req, res) => {
-  res.clearCookie('refreshToken', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV==='production' })
-  res.json({ ok: true })
-}
+// -----------------------------------------------------
+// REFRESH TOKEN
+// -----------------------------------------------------
+export const refreshToken = async (req, res) => {
+  try {
+    const token = req.cookies?.refreshToken;
+    if (!token) return res.status(401).json({ message: "No refresh token" });
+
+    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+
+    const access = generateToken(decoded.id);
+    res.json({ token: access });
+  } catch (err) {
+    res.status(401).json({ message: "Invalid refresh token" });
+  }
+};
+
+// -----------------------------------------------------
+// LOGOUT
+// -----------------------------------------------------
+export const logout = async (req, res) => {
+  res.clearCookie("refreshToken");
+  res.json({ ok: true });
+};
+
+// -----------------------------------------------------
+// FORGOT PASSWORD (SEND EMAIL via GMAIL SMTP)
+// -----------------------------------------------------
+export const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+  if (!user)
+    return res.status(400).json({ message: "Email not found" });
+
+  // Generate token
+  const token = crypto.randomBytes(32).toString("hex");
+
+  user.resetToken = token;
+  user.resetTokenExpire = Date.now() + 10 * 60 * 1000; // 10 min
+  await user.save();
+
+  const resetURL = `${process.env.CLIENT_URL}/reset-password/${token}`;
+
+  // EMAIL TEMPLATE
+  const html = `
+    <h2>Password Reset Request</h2>
+    <p>Click below to reset your password:</p>
+    <a href="${resetURL}" 
+       style="padding:10px 20px;background:#2563eb;color:#fff;border-radius:6px;text-decoration:none;">
+       Reset Password
+    </a>
+    <p>If the button doesn't work, use this link:</p>
+    <p>${resetURL}</p>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM,
+      to: user.email,
+      subject: "Reset Your Password",
+      html,
+    });
+
+    return res.json({ message: "Reset email sent successfully" });
+  } catch (err) {
+    console.log("Email error:", err);
+    return res.status(500).json({ message: "Email sending failed" });
+  }
+};
+
+// -----------------------------------------------------
+// RESET PASSWORD
+// -----------------------------------------------------
+export const resetPassword = async (req, res) => {
+  const { token } = req.params;
+  const { newPassword } = req.body;
+
+  const user = await User.findOne({
+    resetToken: token,
+    resetTokenExpire: { $gt: Date.now() },
+  });
+
+  if (!user)
+    return res.status(400).json({ message: "Invalid or expired token" });
+
+  user.password = await bcrypt.hash(newPassword, 10);
+  user.resetToken = undefined;
+  user.resetTokenExpire = undefined;
+
+  await user.save();
+
+  res.json({ message: "Password updated successfully" });
+};

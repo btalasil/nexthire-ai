@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/axiosClient";
-import { TextField, Button, Box, Typography, Card } from "@mui/material";
 
 export default function Register() {
+  const navigate = useNavigate();
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
-  const navigate = useNavigate();
 
   const submit = async (e) => {
     e.preventDefault();
@@ -16,56 +16,94 @@ export default function Register() {
 
     try {
       await api.post("/api/auth/register", { name, email, password });
-      window.location.href = "/login";
+      navigate("/login");
     } catch (e) {
-      setErr(e.response?.data?.message || "Signup failed");
+      setErr(e.response?.data?.message || "Sign-up failed");
     }
   };
 
   return (
-    <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
-      <Card sx={{ p: 4, width: 400 }}>
-        <Typography variant="h5" align="center" mb={2}>
+    <div className="min-h-screen flex items-center justify-center bg-[#F2F0EF] px-4 py-6">
+
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-[#D9D9D9] p-6 sm:p-8">
+
+        {/* Heading */}
+        <h2 className="text-center text-3xl font-semibold text-[#4B6E48] mb-6">
           Create Account
-        </Typography>
+        </h2>
 
-        <form onSubmit={submit}>
-          <TextField
-            fullWidth
-            margin="normal"
-            label="Full Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+        {/* Error Message */}
+        {err && (
+          <p className="text-red-600 text-center mb-3 bg-red-100 py-2 rounded-xl border border-red-300">
+            {err}
+          </p>
+        )}
 
-          <TextField
-            fullWidth
-            margin="normal"
-            label="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+        <form onSubmit={submit} className="space-y-6">
 
-          <TextField
-            fullWidth
-            margin="normal"
-            label="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+          {/* Name */}
+          <div>
+            <label className="text-[#898989] text-sm mb-1 block">Full Name *</label>
+            <input
+              type="text"
+              placeholder="Your full name"
+              className="w-full bg-[#F7F7F7] border border-[#D9D9D9] rounded-xl px-4 py-3 outline-none text-[#4A4A4A]
+              focus:ring-2 focus:ring-[#B2AC88]"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
 
-          {err && <Typography color="error">{err}</Typography>}
+          {/* Email */}
+          <div>
+            <label className="text-[#898989] text-sm mb-1 block">Email *</label>
+            <input
+              type="email"
+              placeholder="Enter email"
+              className="w-full bg-[#F7F7F7] border border-[#D9D9D9] rounded-xl px-4 py-3 outline-none text-[#4A4A4A]
+              focus:ring-2 focus:ring-[#B2AC88]"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
 
-          <Button fullWidth variant="contained" sx={{ mt: 2 }} type="submit">
+          {/* Password */}
+          <div>
+            <label className="text-[#898989] text-sm mb-1 block">Password *</label>
+            <input
+              type="password"
+              placeholder="Create password"
+              className="w-full bg-[#F7F7F7] border border-[#D9D9D9] rounded-xl px-4 py-3 outline-none text-[#4A4A4A]
+              focus:ring-2 focus:ring-[#B2AC88]"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            className="w-full py-3 bg-[#4B6E48] text-white rounded-xl text-lg font-semibold
+            hover:bg-[#3f5c3c] transition-all active:scale-95 shadow-md"
+          >
             SIGN UP
-          </Button>
+          </button>
         </form>
 
-        <Typography mt={2} align="center">
-          Already have an account? <Link to="/login">Login</Link>
-        </Typography>
-      </Card>
-    </Box>
+        {/* Login Redirect */}
+        <p className="text-center text-[#898989] mt-5 text-sm sm:text-base">
+          Already have an account?{" "}
+          <span
+            className="text-[#4B6E48] cursor-pointer font-medium hover:underline"
+            onClick={() => navigate("/login")}
+          >
+            Login
+          </span>
+        </p>
+      </div>
+    </div>
   );
 }

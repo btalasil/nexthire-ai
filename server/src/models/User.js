@@ -1,9 +1,16 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true }
-}, { timestamps: true });
+const userSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
 
-export default mongoose.model('User', userSchema);
+    // REQUIRED FOR FORGOT PASSWORD FEATURE
+    resetToken: { type: String },
+    resetTokenExpire: { type: Date }
+  },
+  { timestamps: true }
+);
+
+export default mongoose.model("User", userSchema);

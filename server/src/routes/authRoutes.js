@@ -1,39 +1,38 @@
 import { Router } from "express";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import User from "../models/User.js";
 import auth from "../middleware/authMiddleware.js";
+
+// Import controller functions
+import {
+  register,
+  login,
+  refreshToken,
+  logout,
+  getMe,
+  forgotPassword,
+  resetPassword
+} from "../controllers/authController.js";
 
 const router = Router();
 
-router.post("/register", async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ message: "Missing fields" });
+// REGISTER
+router.post("/register", register);
 
-  const exists = await User.findOne({ email });
-  if (exists) return res.status(400).json({ message: "Email already used" });
+// LOGIN
+router.post("/login", login);
 
-  const hash = await bcrypt.hash(password, 10);
-  const user = await User.create({ email, password: hash });
+// CURRENT USER INFO
+router.get("/me", auth, getMe);
 
-  return res.status(201).json({ message: "Registered", id: user._id });
-});
+// REFRESH TOKEN
+router.post("/refresh", refreshToken);
 
-router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-  const user = await User.findOne({ email });
-  if (!user) return res.status(400).json({ message: "Invalid credentials" });
+// LOGOUT
+router.post("/logout", logout);
 
-  const ok = await bcrypt.compare(password, user.password);
-  if (!ok) return res.status(400).json({ message: "Invalid credentials" });
+// FORGOT PASSWORD → Send reset email
+router.post("/forgot-password", forgotPassword);
 
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-  res.json({ token });
-});
-
-// NEW: return current user profile (no password)
-router.get("/me", auth, (req, res) => {
-  res.json(req.user);
-});
+// RESET PASSWORD → Using token
+router.post("/reset-password/:token", resetPassword);
 
 export default router;

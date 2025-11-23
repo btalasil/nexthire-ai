@@ -64,7 +64,6 @@ export default function Jobs() {
     setSaving(false);
   };
 
-  // ✅ Add Job (send string date)
   const addJob = async () => {
     if (!company || !role) return alert("Company and Role required.");
 
@@ -75,7 +74,7 @@ export default function Jobs() {
       role,
       link,
       status: statusValue,
-      appliedAt: appliedAt || "",      // ✅ pure string
+      appliedAt: appliedAt || "",
       tags: tags ? tags.split(",").map((t) => t.trim()) : [],
       notes,
     });
@@ -90,14 +89,13 @@ export default function Jobs() {
     setRole(job.role);
     setLink(job.link || "");
     setStatusValue(job.status);
-    setAppliedAt(job.appliedAt || ""); // ✅ pure string
+    setAppliedAt(job.appliedAt || "");
     setTags((job.tags || []).join(", "));
     setNotes(job.notes || "");
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // ✅ Update Job (send string date)
   const updateJob = async () => {
     try {
       setSaving(true);
@@ -144,97 +142,102 @@ export default function Jobs() {
       return 0;
     });
 
-  return (
-    <div className="max-w-5xl mx-auto p-6">
+  // pastel badge styles
+  const badgeStyle = (status) => {
+    switch (status) {
+      case "Offer":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-200 dark:text-yellow-900";
+      case "Interview":
+        return "bg-green-100 text-green-800 dark:bg-green-200 dark:text-green-900";
+      case "Applied":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-200 dark:text-blue-900";
+      default:
+        return "bg-red-100 text-red-800 dark:bg-red-200 dark:text-red-900";
+    }
+  };
 
-      <div className="flex justify-between items-center mb-5">
-        <h2 className="text-2xl font-semibold">
+  return (
+    <div className="min-h-screen px-4 sm:px-6 py-8 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+      
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl sm:text-3xl font-semibold">
           {editJob ? "Edit Job" : "Track your Applications"}
         </h2>
 
         {filterStatus && (
           <Button variant="outlined" onClick={() => navigate("/jobs")}>
-            Show All Jobs
+            Clear Filter
           </Button>
         )}
       </div>
 
-      <div className="grid gap-3 mb-6 border p-4 rounded-md bg-white">
-        <TextField
-          label="Company"
-          value={company}
-          onChange={(e) => setCompany(e.target.value)}
-        />
-        <TextField
-          label="Role"
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-        />
-        <TextField
-          label="Job Link"
-          value={link}
-          onChange={(e) => setLink(e.target.value)}
-        />
+      {/* FORM CARD */}
+      <div className="rounded-2xl p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm mb-10">
+        <div className="grid gap-4">
 
-        <FormControl>
-          <InputLabel>Status</InputLabel>
-          <Select
-            value={statusValue}
-            onChange={(e) => setStatusValue(e.target.value)}
-          >
-            {STATUS.map((s) => (
-              <MenuItem key={s} value={s}>
-                {s}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+          <TextField label="Company" value={company} onChange={(e) => setCompany(e.target.value)} />
+          <TextField label="Role" value={role} onChange={(e) => setRole(e.target.value)} />
+          <TextField label="Job Link" value={link} onChange={(e) => setLink(e.target.value)} />
 
-        <TextField
-          type="date"
-          label="Applied Date"
-          InputLabelProps={{ shrink: true }}
-          value={appliedAt}
-          onChange={(e) => setAppliedAt(e.target.value)}
-        />
+          <FormControl>
+            <InputLabel>Status</InputLabel>
+            <Select value={statusValue} onChange={(e) => setStatusValue(e.target.value)}>
+              {STATUS.map((s) => (
+                <MenuItem key={s} value={s}>
+                  {s}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-        <TextField
-          label="Tags (comma separated)"
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-        />
+          <TextField
+            type="date"
+            label="Applied Date"
+            InputLabelProps={{ shrink: true }}
+            value={appliedAt}
+            onChange={(e) => setAppliedAt(e.target.value)}
+          />
 
-        <TextField
-          multiline
-          rows={2}
-          label="Notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-        />
+          <TextField
+            label="Tags (comma separated)"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+          />
 
-        <div className="flex gap-3">
-          <Button
-            variant="contained"
-            onClick={editJob ? updateJob : addJob}
-            disabled={saving}
-          >
-            {editJob
-              ? saving
-                ? "Updating..."
-                : "Update Job"
-              : saving
-              ? "Adding..."
-              : "Add Job"}
-          </Button>
+          <TextField
+            multiline
+            rows={2}
+            label="Notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
 
-          {editJob && (
-            <Button variant="outlined" onClick={resetForm}>
-              Cancel Edit
+          <div className="flex gap-3 mt-2">
+            <Button
+              variant="contained"
+              onClick={editJob ? updateJob : addJob}
+              disabled={saving}
+            >
+              {editJob
+                ? saving
+                  ? "Updating..."
+                  : "Update Job"
+                : saving
+                ? "Adding..."
+                : "Add Job"}
             </Button>
-          )}
+
+            {editJob && (
+              <Button variant="outlined" onClick={resetForm}>
+                Cancel Edit
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
+      {/* FILTERS */}
       <div className="grid md:grid-cols-3 gap-4 mb-6">
         <TextField
           label="Search company or role"
@@ -244,10 +247,7 @@ export default function Jobs() {
 
         <FormControl>
           <InputLabel>Status</InputLabel>
-          <Select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-          >
+          <Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
             <MenuItem value="">
               <em>All</em>
             </MenuItem>
@@ -270,62 +270,62 @@ export default function Jobs() {
         </FormControl>
       </div>
 
-      <div className="divide-y rounded border bg-white">
-        {loading ? (
-          <div className="p-4 text-gray-500">Loading...</div>
-        ) : filtered.length === 0 ? (
-          <div className="p-4 text-gray-500">No jobs found.</div>
-        ) : (
-          filtered.map((j) => (
+      {/* JOB CARDS */}
+      {loading ? (
+        <div className="p-4 text-gray-500">Loading...</div>
+      ) : filtered.length === 0 ? (
+        <div className="p-4 text-gray-500">No jobs found.</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filtered.map((j) => (
             <div
               key={j._id}
-              className="flex justify-between items-center p-3 hover:bg-gray-50"
+              className="p-5 rounded-2xl bg-white dark:bg-gray-800 
+              border border-gray-200 dark:border-gray-700 shadow-sm
+              hover:shadow-md hover:scale-[1.02] transition cursor-pointer"
             >
-              <div>
-                <div className="font-semibold text-lg">{j.company}</div>
-                <div className="text-sm text-gray-600">
-                  {j.role} • {j.status}
-                </div>
+              <h3 className="text-xl font-semibold">{j.company}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                {j.role}
+              </p>
 
-                {j.link && (
+              <span
+                className={`text-xs px-2 py-1 rounded-md font-medium border ${badgeStyle(j.status)}`}
+              >
+                {j.status}
+              </span>
+
+              {j.link && (
+                <div className="mt-2">
                   <a
                     href={j.link.startsWith("http") ? j.link : `https://${j.link}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 text-xs underline"
+                    className="text-blue-500 text-xs underline"
                   >
                     {j.link}
                   </a>
-                )}
+                </div>
+              )}
 
-                {j.appliedAt && (
-                  <div className="text-xs text-gray-500">
-                    Applied on: {dayjs(j.appliedAt).format("DD-MMM-YYYY")}
-                  </div>
-                )}
-              </div>
+              {j.appliedAt && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Applied on: {dayjs(j.appliedAt).format("DD-MMM-YYYY")}
+                </p>
+              )}
 
-              <div className="flex gap-3 items-center text-sm">
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={() => startEdit(j)}
-                >
+              <div className="flex gap-3 mt-4">
+                <Button variant="outlined" size="small" onClick={() => startEdit(j)}>
                   Edit
                 </Button>
-
-                <Button
-                  size="small"
-                  color="error"
-                  onClick={() => deleteJob(j._id)}
-                >
+                <Button variant="contained" color="error" size="small" onClick={() => deleteJob(j._id)}>
                   Delete
                 </Button>
               </div>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

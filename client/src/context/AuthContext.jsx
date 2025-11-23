@@ -8,10 +8,11 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
-  // 🔥 Make loadUser reusable so login() can call it too
+  // Reusable loader
   const loadUser = async () => {
     const t = getToken();
     if (!t) {
+      setUser(null);
       setLoadingUser(false);
       return;
     }
@@ -27,20 +28,21 @@ export function AuthProvider({ children }) {
     setLoadingUser(false);
   };
 
-  // Load user on first page load
+  // Load user when app opens
   useEffect(() => {
     loadUser();
   }, []);
 
-  // LOGIN — after saving token load user immediately
+  // LOGIN → store token & load user instantly
   const login = async (t) => {
     saveToken(t);
     setToken(t);
 
-    setLoadingUser(true);  // 🔥 Important: reset loader
-    await loadUser();      // 🔥 Now navbar updates instantly
+    setLoadingUser(true);   // Fix: Don't show UI flicker
+    await loadUser();
   };
 
+  // LOGOUT → clear everything
   const logout = () => {
     localStorage.removeItem("token");
     setToken(null);
@@ -48,8 +50,10 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, loadingUser, login, setUser, logout }}>
-      {!loadingUser ? children : null}
+    <AuthContext.Provider
+      value={{ token, user, loadingUser, login, logout, setUser }}
+    >
+      {loadingUser ? null : children}
     </AuthContext.Provider>
   );
 }
