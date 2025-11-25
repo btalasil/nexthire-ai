@@ -34,17 +34,21 @@ const sendTokens = (res, user) => {
 };
 
 // -----------------------------------------------------
-// EMAIL TRANSPORTER (GMAIL SMTP + APP PASSWORD)
+// EMAIL TRANSPORTER (GMAIL RELAY FOR RENDER)
 // -----------------------------------------------------
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
-  secure: false,
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // using STARTTLS
   auth: {
     user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS, // Gmail app password
+    pass: process.env.SMTP_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false, // Required for Render
   },
 });
+
 
 // -----------------------------------------------------
 // REGISTER
@@ -138,7 +142,7 @@ export const logout = async (req, res) => {
 };
 
 // -----------------------------------------------------
-// FORGOT PASSWORD (SEND EMAIL via GMAIL SMTP)
+// FORGOT PASSWORD (SEND EMAIL)
 // -----------------------------------------------------
 export const forgotPassword = async (req, res) => {
   const { email } = req.body;
@@ -147,16 +151,15 @@ export const forgotPassword = async (req, res) => {
   if (!user)
     return res.status(400).json({ message: "Email not found" });
 
-  // Generate token
+  // Generate reset token
   const token = crypto.randomBytes(32).toString("hex");
 
   user.resetToken = token;
-  user.resetTokenExpire = Date.now() + 10 * 60 * 1000; // 10 min
+  user.resetTokenExpire = Date.now() + 10 * 60 * 1000; // 10 min validity
   await user.save();
 
   const resetURL = `${process.env.CLIENT_URL}/reset-password/${token}`;
 
-  // EMAIL TEMPLATE
   const html = `
     <h2>Password Reset Request</h2>
     <p>Click below to reset your password:</p>
