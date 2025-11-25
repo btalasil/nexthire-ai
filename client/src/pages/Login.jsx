@@ -6,7 +6,7 @@ import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();   // ✅ use AuthContext login()
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,10 +19,7 @@ export default function Login() {
 
     try {
       const res = await api.post("/api/auth/login", { email, password });
-
-      // ✅ Do NOT manually set localStorage token
       await login(res.data.token);
-
       navigate("/dashboard");
     } catch (e) {
       setErr(e.response?.data?.message || "Login failed");
@@ -30,10 +27,18 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex justify-center items-center bg-[#f3f3f3] px-4">
+    <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100 dark:bg-gray-900 px-4 relative">
 
-      <div className="w-full max-w-md bg-white shadow-xl rounded-2xl p-8">
-        <h2 className="text-2xl font-bold text-center mb-6 text-[#2f4f2f]">
+      {/* Project Title */}
+      <div className="absolute top-10 w-full text-center animate-fade">
+        <h1 className="text-3xl font-extrabold text-green-800 dark:text-green-300 tracking-wide">
+          NextHire-AI
+        </h1>
+      </div>
+
+      {/* Login Card */}
+      <div className="w-full max-w-md bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8 mt-20 md:mt-16">
+        <h2 className="text-2xl font-bold text-center mb-6 text-[#2f4f2f] dark:text-green-200">
           Login
         </h2>
 
@@ -41,11 +46,11 @@ export default function Login() {
 
         <form onSubmit={submit} className="space-y-5">
           <div>
-            <label className="text-sm font-medium">Email *</label>
+            <label className="text-sm font-medium dark:text-gray-200">Email *</label>
             <input
               type="email"
               placeholder="example@mail.com"
-              className="w-full mt-1 px-4 py-3 rounded-lg border focus:ring focus:ring-green-300 outline-none bg-gray-50"
+              className="w-full mt-1 px-4 py-3 rounded-lg border dark:border-gray-700 focus:ring focus:ring-green-300 outline-none bg-gray-50 dark:bg-gray-700 dark:text-white"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -53,19 +58,19 @@ export default function Login() {
           </div>
 
           <div className="relative">
-            <label className="text-sm font-medium">Password *</label>
+            <label className="text-sm font-medium dark:text-gray-200">Password *</label>
 
             <input
               type={showPassword ? "text" : "password"}
               placeholder="Enter your password"
-              className="w-full mt-1 px-4 py-3 rounded-lg border pr-12 bg-gray-50 focus:ring focus:ring-green-300 outline-none"
+              className="w-full mt-1 px-4 py-3 rounded-lg border dark:border-gray-700 pr-12 bg-gray-50 dark:bg-gray-700 focus:ring focus:ring-green-300 outline-none dark:text-white"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
 
             <span
-              className="absolute right-4 top-11 cursor-pointer text-gray-600"
+              className="absolute right-4 top-11 cursor-pointer text-gray-600 dark:text-gray-300"
               onClick={() => setShowPassword(!showPassword)}
             >
               {showPassword ? <FaEyeSlash /> : <FaEye />}
@@ -73,22 +78,22 @@ export default function Login() {
           </div>
 
           <div className="text-right -mt-2">
-            <Link to="/forgot-password" className="text-sm text-green-700 hover:underline">
+            <Link to="/forgot-password" className="text-sm text-green-700 dark:text-green-300 hover:underline">
               Forgot Password?
             </Link>
           </div>
 
           <button
             type="submit"
-            className="w-full py-3 bg-[#315c41] hover:bg-[#264a33] text-white font-semibold rounded-lg"
+            className="w-full py-3 bg-[#315c41] hover:bg-[#264a33] text-white font-semibold rounded-lg transition"
           >
             LOGIN
           </button>
         </form>
 
-        <p className="text-center text-sm mt-5">
+        <p className="text-center text-sm mt-5 dark:text-gray-300">
           Don’t have an account?{" "}
-          <Link to="/register" className="text-green-700 font-medium hover:underline">
+          <Link to="/register" className="text-green-700 dark:text-green-300 font-medium hover:underline">
             Sign up
           </Link>
         </p>

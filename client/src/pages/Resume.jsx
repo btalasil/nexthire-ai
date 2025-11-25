@@ -12,6 +12,7 @@ export default function Resume() {
   const [err, setErr] = useState("");
   const [loadingUpload, setLoadingUpload] = useState(false);
   const [loadingCompare, setLoadingCompare] = useState(false);
+
   const dropRef = useRef(null);
 
   const validate = (f) => {
@@ -23,10 +24,8 @@ export default function Resume() {
 
   const onFile = (f) => {
     const v = validate(f);
-    if (v) {
-      setErr(v);
-      return;
-    }
+    if (v) return setErr(v);
+
     setErr("");
     setFile(f);
   };
@@ -38,9 +37,7 @@ export default function Resume() {
 
   const onDrag = (e) => e.preventDefault();
 
-  // --------------------------
-  // UPLOAD & ANALYZE RESUME
-  // --------------------------
+  // Upload & Analyze Resume
   const upload = async () => {
     try {
       setErr("");
@@ -51,7 +48,7 @@ export default function Resume() {
 
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("jd", jd);
+      fd.append("jd", jd || "");
 
       const { data } = await api.post("/api/resume/upload", fd, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -68,9 +65,7 @@ export default function Resume() {
     }
   };
 
-  // --------------------------
-  // COMPARE WITH JD
-  // --------------------------
+  // Compare With JD
   const doCompare = async () => {
     try {
       setErr("");
@@ -79,7 +74,6 @@ export default function Resume() {
       const { data } = await api.post("/api/resume/compare", {
         jd,
         resumeText: result?.resumeText || "",
-        resumeSkills: result?.skillsFound || [],
       });
 
       setCompare(data);
@@ -91,49 +85,72 @@ export default function Resume() {
   };
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-2xl font-bold">Resume Analyzer</h2>
+    <div className="px-4 md:px-6 py-6 space-y-6 max-w-4xl mx-auto">
+      <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
+        Resume Analyzer
+      </h2>
 
       {/* FILE DROPZONE */}
       <div
         ref={dropRef}
         onDrop={onDrop}
         onDragOver={onDrag}
-        className="border-2 border-dashed rounded-lg p-6 text-center bg-white"
+        className="border-2 border-dashed border-gray-300 dark:border-gray-600 
+                   rounded-xl p-8 text-center bg-white dark:bg-gray-800 
+                   hover:bg-gray-50 dark:hover:bg-gray-700 transition"
       >
-        <p className="mb-2">Drag & drop your PDF here, or choose a file</p>
+        <p className="text-gray-700 dark:text-gray-300 text-lg">
+          Drag & drop your PDF here, or choose a file
+        </p>
+
         <input
           type="file"
           accept="application/pdf"
           onChange={(e) => onFile(e.target.files[0])}
+          className="mt-4 text-sm"
         />
-        {file && <div className="mt-2 text-sm opacity-80">Selected: {file.name}</div>}
+
+        {file && (
+          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+            Selected: {file.name}
+          </p>
+        )}
       </div>
 
       {/* UPLOAD BUTTON */}
       <button
-        className="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
+        className="w-full md:w-auto px-6 py-3 rounded-lg bg-blue-600 
+                   hover:bg-blue-700 text-white text-sm font-semibold
+                   transition disabled:opacity-50"
         onClick={upload}
         disabled={!file || loadingUpload}
       >
         {loadingUpload ? "Analyzing..." : "Upload & Analyze"}
       </button>
 
-      {progress > 0 && progress < 100 && <div>Uploading... {progress}%</div>}
-      {err && <div style={{ color: "red" }}>{err}</div>}
+      {progress > 0 && progress < 100 && (
+        <div className="text-sm text-gray-600 dark:text-gray-300">
+          Uploading... {progress}%
+        </div>
+      )}
 
-      {/* JOB DESCRIPTION TEXTAREA */}
+      {err && <div className="text-red-500">{err}</div>}
+
+      {/* JD INPUT */}
       <textarea
-        className="w-full border rounded p-2 bg-white"
+        className="w-full border rounded-lg p-3 bg-white dark:bg-gray-800 
+                   dark:text-gray-200 border-gray-300 dark:border-gray-600"
         placeholder="Paste job description here..."
-        rows={8}
+        rows={6}
         value={jd}
         onChange={(e) => setJd(e.target.value)}
       />
 
       {/* COMPARE BUTTON */}
       <button
-        className="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
+        className="w-full md:w-auto px-6 py-3 rounded-lg bg-green-600 
+                   hover:bg-green-700 text-white text-sm font-semibold
+                   transition disabled:opacity-50"
         onClick={doCompare}
         disabled={!jd || loadingCompare}
       >
@@ -141,87 +158,91 @@ export default function Resume() {
       </button>
 
       {/* ------------------------------------------------------
-          AI RESUME RESULTS BLOCK
+          RESUME RESULTS
       ------------------------------------------------------ */}
       {result && (
-        <div className="mt-4 p-4 border rounded bg-white">
-          <h3 className="text-xl font-semibold">Resume Results (AI Powered)</h3>
+        <div className="mt-6 p-6 rounded-xl bg-white dark:bg-gray-800 shadow">
+          <h3 className="text-xl font-semibold mb-3 dark:text-gray-200">
+            Resume Results (AI Powered)
+          </h3>
 
-          <p><b>AI Score:</b> {result.score}%</p>
-
-          <p className="mt-2"><b>Summary:</b><br />{result.summary}</p>
-
-          <p className="mt-2">
-            <b>Skills Found:</b>{" "}
-            {result.skillsFound?.length ? result.skillsFound.join(", ") : "None"}
+          <p>
+            <b>AI Score:</b> {result.score}%
           </p>
 
-          <p className="mt-2">
-            <b>Missing Skills:</b>{" "}
-            {result.missingSkills?.length ? result.missingSkills.join(", ") : "None"}
+          <p className="mt-3">
+            <b>Summary:</b>
+            <br />
+            {result.summary}
           </p>
 
-          {result.highlights?.length ? (
-            <div className="mt-3">
+          <p className="mt-3">
+            <b>Skills Found:</b> {result.skillsFound?.join(", ") || "None"}
+          </p>
+
+          {jd && result.missingSkills?.length > 0 && (
+            <p className="mt-3">
+              <b>Missing Skills:</b> {result.missingSkills.join(", ")}
+            </p>
+          )}
+
+          {result.highlights?.length > 0 && (
+            <div className="mt-4">
               <b>AI Highlights:</b>
-              <ul className="list-disc list-inside text-sm">
+              <ul className="list-disc list-inside text-sm mt-2">
                 {result.highlights.map((h, i) => (
                   <li key={i}>{h}</li>
                 ))}
               </ul>
             </div>
-          ) : null}
+          )}
 
-          {result.recommendations?.length ? (
-            <div className="mt-3">
+          {jd && result.recommendations?.length > 0 && (
+            <div className="mt-4">
               <b>AI Recommendations:</b>
-              <ul className="list-disc list-inside text-sm">
+              <ul className="list-disc list-inside text-sm mt-2">
                 {result.recommendations.map((r, i) => (
                   <li key={i}>{r}</li>
                 ))}
               </ul>
             </div>
-          ) : null}
+          )}
         </div>
       )}
 
       {/* ------------------------------------------------------
-          AI JOB MATCH RESULTS BLOCK
+          COMPARISON RESULTS
       ------------------------------------------------------ */}
       {compare && (
-        <div className="mt-4 p-4 border rounded bg-white">
-          <h3 className="text-xl font-semibold">Job Match Results (AI Powered)</h3>
+        <div className="mt-6 p-6 rounded-xl bg-white dark:bg-gray-800 shadow">
+          <h3 className="text-xl font-semibold mb-3 dark:text-gray-200">
+            Job Match Results (AI Powered)
+          </h3>
 
-          <p><b>Match Score:</b> {compare.matchScore}%</p>
+          <p>
+            <b>Match Score:</b> {compare.matchScore}%
+          </p>
 
-          <p className="mt-2">
+          <p className="mt-3">
             <b>JD Keywords:</b>{" "}
-            {compare.jdKeywords?.length ? compare.jdKeywords.join(", ") : "None"}
+            {compare.jdKeywords?.join(", ") || "None"}
           </p>
 
-          <p className="mt-2">
+          <p className="mt-3">
             <b>Missing Skills:</b>{" "}
-            {compare.missingSkills?.length ? compare.missingSkills.join(", ") : "None"}
+            {compare.missingSkills?.join(", ") || "None"}
           </p>
 
-          {compare.recommendations?.length ? (
-            <div className="mt-3">
+          {compare.recommendations?.length > 0 && (
+            <div className="mt-4">
               <b>AI Recommendations:</b>
-              <ul className="list-disc list-inside text-sm">
+              <ul className="list-disc list-inside text-sm mt-2">
                 {compare.recommendations.map((r, i) => (
                   <li key={i}>{r}</li>
                 ))}
               </ul>
             </div>
-          ) : null}
-        </div>
-      )}
-
-      {/* DEBUG OUTPUT */}
-      {result && (
-        <div className="mt-4 p-4 bg-gray-100 border rounded text-xs whitespace-pre-wrap">
-          <b>Debug JSON</b>
-          <pre>{JSON.stringify(result, null, 2)}</pre>
+          )}
         </div>
       )}
     </div>

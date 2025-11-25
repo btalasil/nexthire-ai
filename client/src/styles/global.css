@@ -33,3 +33,48 @@
 .animate-fade-in {
   animation: fade-in 0.7s ease forwards;
 }
+.theme-toggle-animate {
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+.theme-toggle-animate:hover {
+  transform: rotate(20deg);
+}
+.nav-link-animate {
+  transition: all 0.25s ease;
+}
+
+.nav-link-animate:hover {
+  transform: translateY(-2px);
+  opacity: 0.8;
+}
+.nav-icon-animate {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.nav-icon-animate:hover {
+  transform: scale(1.12) rotate(6deg);
+  opacity: 0.85;
+}
+.nav-item-animate {
+  transition: all 0.3s ease;
+}
+
+.nav-item-animate:hover {
+  transform: translateY(-2px);
+  opacity: 0.9;
+}
+@keyframes fadeInSmooth {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade {
+  animation: fadeInSmooth 0.6s ease-out forwards;
+}

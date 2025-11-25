@@ -18,6 +18,9 @@ import {
   MenuItem,
 } from "@mui/material";
 
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import LightModeIcon from "@mui/icons-material/LightMode";
+
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
@@ -37,6 +40,12 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const hideNavbarRoutes = ["/login", "/register", "/forgot-password"];
+
+  const hideNavbar =
+    hideNavbarRoutes.includes(location.pathname) ||
+    location.pathname.startsWith("/reset-password");
+
   const muiTheme = useMemo(
     () =>
       createTheme({
@@ -45,13 +54,8 @@ export default function App() {
     [mode]
   );
 
-  // DARK MODE REAL FIX
   useEffect(() => {
-    if (mode === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    document.documentElement.classList.toggle("dark", mode === "dark");
     localStorage.setItem("theme", mode);
   }, [mode]);
 
@@ -61,33 +65,38 @@ export default function App() {
   const Unauthed = ({ children }) =>
     !token ? children : <Navigate to="/dashboard" />;
 
-  const hideNavbar = ["/login", "/register"].includes(location.pathname);
-
   return (
     <ThemeProvider theme={muiTheme}>
       <CssBaseline />
 
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-black dark:text-white transition-all">
+
         {/* NAVBAR */}
         {!hideNavbar && (
           <header className="flex justify-between items-center px-6 py-4 shadow bg-white dark:bg-gray-800 dark:text-white">
-            <h2 className="text-xl font-bold">CareerPilot</h2>
+            <h2 className="text-xl font-bold nav-item-animate">NextHire-AI</h2>
 
-            <nav className="flex items-center gap-4 text-sm font-medium">
-              <Link to="/dashboard">Dashboard</Link>
-              <Link to="/jobs">Jobs</Link>
-              <Link to="/resume">Resume</Link>
+            <nav className="flex items-center gap-5 text-sm font-medium">
 
-              <button
-                className="px-3 py-1 border rounded text-sm dark:border-gray-600"
+              <Link to="/dashboard" className="nav-link-animate">Dashboard</Link>
+              <Link to="/jobs" className="nav-link-animate">Jobs</Link>
+              <Link to="/resume" className="nav-link-animate">Resume</Link>
+
+              {/* 🌙/☀️ THEME TOGGLE */}
+              <IconButton
                 onClick={() => setMode(mode === "light" ? "dark" : "light")}
+                sx={{ color: mode === "light" ? "black" : "white" }}
+                className="nav-icon-animate"
               >
-                {mode === "light" ? "Dark" : "Light"}
-              </button>
+                {mode === "light" ? <DarkModeIcon /> : <LightModeIcon />}
+              </IconButton>
 
               {token && (
                 <>
-                  <IconButton onClick={(e) => setAnchor(e.currentTarget)}>
+                  <IconButton
+                    onClick={(e) => setAnchor(e.currentTarget)}
+                    className="nav-icon-animate"
+                  >
                     <Avatar sx={{ width: 32, height: 32 }}>
                       {(user?.email?.[0] || "U").toUpperCase()}
                     </Avatar>

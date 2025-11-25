@@ -35,6 +35,7 @@ export default function Jobs() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Read ?status= from the URL
   useEffect(() => {
     const urlStatus = new URLSearchParams(location.search).get("status");
     if (urlStatus) {
@@ -51,6 +52,21 @@ export default function Jobs() {
   useEffect(() => {
     fetchJobs();
   }, []);
+
+  // AUTO-SCROLL logic
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const hasStatus = params.get("status");
+
+    if (hasStatus) {
+      setTimeout(() => {
+        const section = document.getElementById("job-results-section");
+        if (section) {
+          section.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 300);
+    }
+  }, [location.search, jobs]);
 
   const resetForm = () => {
     setEditJob(null);
@@ -142,7 +158,6 @@ export default function Jobs() {
       return 0;
     });
 
-  // pastel badge styles
   const badgeStyle = (status) => {
     switch (status) {
       case "Offer":
@@ -158,19 +173,11 @@ export default function Jobs() {
 
   return (
     <div className="min-h-screen px-4 sm:px-6 py-8 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      
-      {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl sm:text-3xl font-semibold">
-          {editJob ? "Edit Job" : "Track your Applications"}
-        </h2>
 
-        {filterStatus && (
-          <Button variant="outlined" onClick={() => navigate("/jobs")}>
-            Clear Filter
-          </Button>
-        )}
-      </div>
+      {/* HEADER */}
+      <h2 className="text-2xl sm:text-3xl font-semibold mb-6">
+        {editJob ? "Edit Job" : "Track your Applications"}
+      </h2>
 
       {/* FORM CARD */}
       <div className="rounded-2xl p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm mb-10">
@@ -238,7 +245,7 @@ export default function Jobs() {
       </div>
 
       {/* FILTERS */}
-      <div className="grid md:grid-cols-3 gap-4 mb-6">
+      <div className="grid md:grid-cols-3 gap-4 mb-4">
         <TextField
           label="Search company or role"
           value={q}
@@ -270,14 +277,26 @@ export default function Jobs() {
         </FormControl>
       </div>
 
+      {/* Clear Filter moved BELOW filters */}
+      {filterStatus && (
+        <div className="mb-6">
+          <Button variant="outlined" onClick={() => navigate("/jobs")}>
+            Clear Filter
+          </Button>
+        </div>
+      )}
+
       {/* JOB CARDS */}
-      {loading ? (
-        <div className="p-4 text-gray-500">Loading...</div>
-      ) : filtered.length === 0 ? (
-        <div className="p-4 text-gray-500">No jobs found.</div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filtered.map((j) => (
+      <div
+        id="job-results-section"
+        className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+      >
+        {loading ? (
+          <div className="p-4 text-gray-500">Loading...</div>
+        ) : filtered.length === 0 ? (
+          <div className="p-4 text-gray-500">No jobs found.</div>
+        ) : (
+          filtered.map((j) => (
             <div
               key={j._id}
               className="p-5 rounded-2xl bg-white dark:bg-gray-800 
@@ -323,9 +342,9 @@ export default function Jobs() {
                 </Button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 }

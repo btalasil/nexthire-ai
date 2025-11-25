@@ -1,5 +1,5 @@
 // ------------------------------------------------------------
-// Resume Controller (Final Version - Gemini 2.5 Flash Working)
+// Resume Controller (FINAL — JD optional, no hallucinations)
 // ------------------------------------------------------------
 
 import { parsePdfBuffer } from "../utils/pdf.js";
@@ -10,10 +10,8 @@ import {
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Gemini client
+// Gemini Client
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-
-// Supported model (from listModels.js results)
 const MODEL = "gemini-2.5-flash";
 
 // ------------------------------------------------------------
@@ -25,18 +23,19 @@ export const uploadResume = async (req, res) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    // Convert PDF to clean text
+    // Convert PDF into text
     const resumeText = await parsePdfBuffer(req.file.buffer);
 
-    // Optional JD input
-    const jd = req.body?.jd || "";
+    // Optional JD
+    const jd = req.body?.jd?.trim() || "";
 
-    // Full resume analysis
+    // Let Gemini analyze resume (NEVER add JD here)
     const ai = await analyzeResumeWithGemini(resumeText, jd);
 
-    // Extract JD keywords if JD is provided
     let jdKeywords = [];
-    if (jd) {
+
+    // Extract JD keywords ONLY IF JD WAS PROVIDED
+    if (jd !== "") {
       jdKeywords = await extractJDKeywordsWithGemini(jd);
     }
 
@@ -52,24 +51,26 @@ export const uploadResume = async (req, res) => {
   }
 };
 
+
 // ------------------------------------------------------------
-// 2️⃣ COMPARE RESUME WITH JOB DESCRIPTION
+// 2️⃣ COMPARE RESUME WITH JOB DESCRIPTION (AFTER UPLOAD)
 // ------------------------------------------------------------
 export const compareWithJD = async (req, res) => {
   try {
-    const { jd = "", resumeText = "" } = req.body || {};
+    const { jd = "", resumeText = "" } = req.body;
 
-    if (!jd) {
-      return res.status(400).json({ error: "JD required" });
+    if (!jd.trim()) {
+      return res.status(400).json({ error: "Job description is required" });
     }
 
-    // Extract JD keywords using AI
+    // Extract keywords from the JD
     const keywords = await extractJDKeywordsWithGemini(jd);
 
+    // Build comparison prompt
     const prompt = `
-Compare this resume to the job description and score match quality.
+Compare a resume with a job description and return STRICT JSON.
 
-Return ONLY JSON:
+Return ONLY this JSON:
 {
   "matchScore": number,
   "jdKeywords": string[],
@@ -82,14 +83,18 @@ ${resumeText}
 
 JOB DESCRIPTION:
 ${jd}
-`;
+    `;
 
     const model = genAI.getGenerativeModel({ model: MODEL });
 
     const result = await model.generateContent(prompt);
 
     let raw = result.response.text().trim();
-    raw = raw.replace(/```json|```/g, "").trim();
+
+    // Remove ```json code block wrappers
+    raw = raw.replace(/```json/gi, "")
+             .replace(/```/g, "")
+             .trim();
 
     const parsed = JSON.parse(raw);
 
@@ -99,7 +104,7 @@ ${jd}
     });
 
   } catch (err) {
-    console.error("Comparison error:", err);
+    console.error("JD Compare Error:", err);
     return res.status(500).json({ error: "Comparison failed" });
   }
 };

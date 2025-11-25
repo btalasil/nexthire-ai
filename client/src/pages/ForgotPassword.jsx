@@ -25,8 +25,17 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100 dark:bg-gray-900">
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg w-96 text-center">
+    <div className="flex justify-center items-center min-h-screen bg-gray-100 dark:bg-gray-900 px-4 relative">
+
+      {/* Project Title */}
+      <div className="absolute top-10 w-full text-center animate-fade">
+        <h1 className="text-3xl font-extrabold text-green-800 dark:text-green-300 tracking-wide">
+          NextHire-AI
+        </h1>
+      </div>
+
+      {/* Forgot Password Card */}
+      <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg w-full max-w-md mt-20 md:mt-16 text-center">
 
         <h2 className="text-2xl font-semibold mb-4 dark:text-white">
           Forgot Password
@@ -40,22 +49,25 @@ export default function ForgotPassword() {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-3 border rounded-lg mb-4 bg-white dark:bg-gray-700 dark:text-white"
+          className="w-full p-3 border rounded-lg mb-4 bg-white dark:bg-gray-700 dark:text-white focus:ring focus:ring-green-300 outline-none"
           placeholder="Enter your email"
         />
 
         <button
           onClick={handleSubmit}
           disabled={loading}
-          className="w-full p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+          className="w-full p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition"
         >
           {loading ? "Sending..." : "Send Reset Link"}
         </button>
 
-        {msg && <p className="text-green-600 text-sm mt-3">{msg}</p>}
-        {error && <p className="text-red-600 text-sm mt-3">{error}</p>}
+        {msg && <p className="text-green-600 dark:text-green-400 text-sm mt-3">{msg}</p>}
+        {error && <p className="text-red-600 dark:text-red-400 text-sm mt-3">{error}</p>}
 
-        <Link to="/login" className="block mt-4 text-blue-600 dark:text-blue-400 text-sm">
+        <Link
+          to="/login"
+          className="block mt-4 text-blue-600 dark:text-blue-400 text-sm hover:underline"
+        >
           Back to Login
         </Link>
       </div>

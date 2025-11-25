@@ -3,8 +3,11 @@ import { FaBriefcase, FaCheck, FaTimes, FaUserTie } from "react-icons/fa";
 import { api } from "../api/axiosClient";
 import { useNavigate } from "react-router-dom";
 import MiniBarChart from "../components/MiniBarChart";
+import { useAuth } from "../context/AuthContext";
 
 export default function Dashboard({ mode }) {
+  const { user } = useAuth(); // ✅ Get logged-in user info
+
   const [jobs, setJobs] = useState([]);
   const [weeklyGoal, setWeeklyGoal] = useState(
     Number(localStorage.getItem("weeklyGoal")) || 10
@@ -52,16 +55,23 @@ export default function Dashboard({ mode }) {
     }
   };
 
+  // Extract first name from user object
+  const displayName =
+    user?.name?.split(" ")[0] || user?.email?.split("@")[0] || "User";
+
   return (
     <div className="min-h-screen px-4 sm:px-6 py-8 transition-all bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
 
       {/* TITLE */}
-      <h1 className="text-2xl sm:text-3xl font-bold mb-1">Welcome back 👋</h1>
-      <p className="text-gray-600 dark:text-gray-300 mb-8">Your job search dashboard</p>
+      <h1 className="text-2xl sm:text-3xl font-bold mb-1 animate-fade">
+        Welcome, {displayName} 👋
+      </h1>
+      <p className="text-gray-600 dark:text-gray-300 mb-8">
+        Your job search dashboard
+      </p>
 
       {/* CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-10">
-
         {cards.map((card, idx) => {
           const count = statusCount(card.key);
           return (
@@ -90,7 +100,6 @@ export default function Dashboard({ mode }) {
             </div>
           );
         })}
-
       </div>
 
       {/* WEEKLY GOAL */}
@@ -106,7 +115,9 @@ export default function Dashboard({ mode }) {
           </button>
         </div>
 
-        <p className="text-sm mb-1">Apply to <strong>{weeklyGoal}</strong> jobs this week</p>
+        <p className="text-sm mb-1">
+          Apply to <strong>{weeklyGoal}</strong> jobs this week
+        </p>
 
         {/* PROGRESS */}
         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
@@ -143,11 +154,15 @@ export default function Dashboard({ mode }) {
               })}
 
               {jobs.length > 0 && followUps.length === 0 && (
-                <p className="text-xs text-gray-500 dark:text-gray-400">🎉 No follow-ups due — you're on track!</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  🎉 No follow-ups due — you're on track!
+                </p>
               )}
 
               {jobs.length === 0 && (
-                <p className="text-xs text-gray-500 dark:text-gray-400">No job applications yet</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  No job applications yet
+                </p>
               )}
             </ul>
           </div>
