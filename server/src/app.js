@@ -7,14 +7,16 @@ import resumeRoutes from "./routes/resumeRoutes.js";
 
 const app = express();
 
-app.use(express.json());
+// FIX 1: allow big JSON & file uploads
+app.use(express.json({ limit: "25mb" }));
+app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 
-// ✅ CORS
+// FIX 2: Correct CORS for BOTH frontend URLs
 app.use(
   cors({
     origin: [
-      "http://localhost:5173",           // local dev
-      "https://nexthire-ai.onrender.com" // deployed frontend
+      "http://localhost:5173",
+      "https://nexthire-ai.onrender.com",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
@@ -22,6 +24,7 @@ app.use(
   })
 );
 
+// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/resume", resumeRoutes);
