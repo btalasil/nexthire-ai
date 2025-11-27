@@ -62,6 +62,7 @@ https://nexthire-ai.onrender.com
 ---
 
 ## 📂 Folder Structure
+md
 nexthire-ai/
 │
 ├── client/ # React frontend
@@ -72,8 +73,8 @@ nexthire-ai/
 ---
 
 ## 🔧 Environment Variables
-
 ### **Backend (.env)**
+md
 MONGO_URI=
 JWT_SECRET=
 JWT_REFRESH_SECRET=
@@ -82,6 +83,7 @@ RESEND_API_KEY=
 CLIENT_URL=
 
 ### **Frontend (.env)**
+md
 VITE_API_URL=
 
 ---
@@ -103,12 +105,14 @@ This ensures **high deliverability** with zero Gmail rate-limit issues.
 ## 🛠️ Setup Instructions (Local)
 
 ### 1️⃣ Install backend
+md
 cd server
 npm install
 npm start
 
 
 ### 2️⃣ Install frontend
+md
 cd client
 npm install
 npm run dev
