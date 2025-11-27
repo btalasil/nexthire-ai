@@ -65,11 +65,12 @@ https://nexthire-ai.onrender.com
 ---
 nexthire-ai/
 │
-├── client/ # React frontend
-├── server/ # Node/Express backend
-├── docs/ # Extra assets / documentation
+├── client/        # React frontend
+├── server/        # Node/Express backend
+├── docs/          # Extra assets / documentation
 ├── README.md
-└── render.yaml # Render deployment config
+└── render.yaml    # Deployment config for Render
+
 ---
 
 ## 🔧 Environment Variables
