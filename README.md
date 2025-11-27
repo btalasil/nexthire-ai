@@ -63,15 +63,15 @@ https://nexthire-ai.onrender.com
 
 ## 📂 Folder Structure
 
+```md
 nexthire-ai/
 │
-├── client/        # React frontend
-├── server/        # Node/Express backend
-├── docs/          # Extra assets / documentation
+├── client/ # React frontend
+├── server/ # Node/Express backend
+├── docs/ # Extra assets / documentation
 ├── README.md
-└── render.yaml    # Deployment config for Render
-
----
+└── render.yaml # Deployment config for Render
+```
 
 ## 🔧 Environment Variables
 ###  Backend (.env)**
