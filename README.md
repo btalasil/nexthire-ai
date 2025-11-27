@@ -62,7 +62,7 @@ https://nexthire-ai.onrender.com
 ---
 
 ## 📂 Folder Structure
-md
+---
 nexthire-ai/
 │
 ├── client/ # React frontend
@@ -73,8 +73,7 @@ nexthire-ai/
 ---
 
 ## 🔧 Environment Variables
-### **Backend (.env)**
-md
+###  Backend (.env)**
 MONGO_URI=
 JWT_SECRET=
 JWT_REFRESH_SECRET=
@@ -83,7 +82,6 @@ RESEND_API_KEY=
 CLIENT_URL=
 
 ### **Frontend (.env)**
-md
 VITE_API_URL=
 
 ---
