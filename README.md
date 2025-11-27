@@ -75,16 +75,18 @@ nexthire-ai/
 
 ## 🔧 Environment Variables
 ###  Backend (.env)**
+```md
 MONGO_URI=
 JWT_SECRET=
 JWT_REFRESH_SECRET=
 RESET_TOKEN_SECRET=
 RESEND_API_KEY=
 CLIENT_URL=
-
+```
 ### **Frontend (.env)**
+```md
 VITE_API_URL=
-
+```
 ---
 
 ## 📧 Password Reset (Resend)
@@ -104,19 +106,18 @@ This ensures **high deliverability** with zero Gmail rate-limit issues.
 ## 🛠️ Setup Instructions (Local)
 
 ### 1️⃣ Install backend
-md
+```md
 cd server
 npm install
 npm start
-
+```
 
 ### 2️⃣ Install frontend
-md
+```md
 cd client
 npm install
 npm run dev
-
-
+```
 ---
 
 ## 🤝 Contributing
