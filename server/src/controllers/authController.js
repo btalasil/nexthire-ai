@@ -2,7 +2,12 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import crypto from "crypto";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
+
+// -----------------------------------------------------
+// RESEND EMAIL CLIENT
+// -----------------------------------------------------
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // -----------------------------------------------------
 // GENERATE ACCESS TOKEN
@@ -32,23 +37,6 @@ const sendTokens = (res, user) => {
 
   return accessToken;
 };
-
-// -----------------------------------------------------
-// EMAIL TRANSPORTER (GMAIL RELAY FOR RENDER)
-// -----------------------------------------------------
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // using STARTTLS
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false, // Required for Render
-  },
-});
-
 
 // -----------------------------------------------------
 // REGISTER
@@ -142,7 +130,7 @@ export const logout = async (req, res) => {
 };
 
 // -----------------------------------------------------
-// FORGOT PASSWORD (SEND EMAIL)
+// FORGOT PASSWORD (SEND EMAIL USING RESEND)
 // -----------------------------------------------------
 export const forgotPassword = async (req, res) => {
   const { email } = req.body;
@@ -155,7 +143,7 @@ export const forgotPassword = async (req, res) => {
   const token = crypto.randomBytes(32).toString("hex");
 
   user.resetToken = token;
-  user.resetTokenExpire = Date.now() + 10 * 60 * 1000; // 10 min validity
+  user.resetTokenExpire = Date.now() + 10 * 60 * 1000;
   await user.save();
 
   const resetURL = `${process.env.CLIENT_URL}/reset-password/${token}`;
@@ -172,8 +160,8 @@ export const forgotPassword = async (req, res) => {
   `;
 
   try {
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM,
+    await resend.emails.send({
+      from: "NexthireAI <no-reply@nexthireai.in>",
       to: user.email,
       subject: "Reset Your Password",
       html,
@@ -181,7 +169,7 @@ export const forgotPassword = async (req, res) => {
 
     return res.json({ message: "Reset email sent successfully" });
   } catch (err) {
-    console.log("Email error:", err);
+    console.log("Resend email error:", err);
     return res.status(500).json({ message: "Email sending failed" });
   }
 };
