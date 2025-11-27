@@ -62,7 +62,7 @@ https://nexthire-ai.onrender.com
 ---
 
 ## 📂 Folder Structure
----
+
 nexthire-ai/
 │
 ├── client/        # React frontend
