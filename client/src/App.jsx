@@ -36,12 +36,12 @@ export default function App() {
   const { token, user, logout } = useAuth();
   const [mode, setMode] = useState(localStorage.getItem("theme") || "light");
   const [anchor, setAnchor] = useState(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
 
   const hideNavbarRoutes = ["/login", "/register", "/forgot-password"];
-
   const hideNavbar =
     hideNavbarRoutes.includes(location.pathname) ||
     location.pathname.startsWith("/reset-password");
@@ -73,66 +73,141 @@ export default function App() {
 
         {/* NAVBAR */}
         {!hideNavbar && (
-          <header className="flex justify-between items-center px-6 py-4 shadow bg-white dark:bg-gray-800 dark:text-white">
-            <h2 className="text-xl font-bold nav-item-animate">NextHire-AI</h2>
+          <>
+            <header className="px-6 py-4 shadow bg-white dark:bg-gray-800 dark:text-white flex justify-between items-center">
 
-            <nav className="flex items-center gap-5 text-sm font-medium">
+              {/* Logo */}
+              <h2 className="text-xl font-bold">NextHire-AI</h2>
 
-              <Link to="/dashboard" className="nav-link-animate">Dashboard</Link>
-              <Link to="/jobs" className="nav-link-animate">Jobs</Link>
-              <Link to="/resume" className="nav-link-animate">Resume</Link>
+              {/* Desktop Navigation */}
+              <nav className="hidden md:flex items-center gap-5 text-sm font-medium">
 
-              {/* 🌙/☀️ THEME TOGGLE */}
-              <IconButton
-                onClick={() => setMode(mode === "light" ? "dark" : "light")}
-                sx={{ color: mode === "light" ? "black" : "white" }}
-                className="nav-icon-animate"
+                <Link to="/dashboard" className="nav-link-animate">Dashboard</Link>
+                <Link to="/jobs" className="nav-link-animate">Jobs</Link>
+                <Link to="/resume" className="nav-link-animate">Resume</Link>
+
+                {/* Theme Toggle */}
+                <IconButton
+                  onClick={() => setMode(mode === "light" ? "dark" : "light")}
+                  sx={{ color: mode === "light" ? "black" : "white" }}
+                >
+                  {mode === "light" ? <DarkModeIcon /> : <LightModeIcon />}
+                </IconButton>
+
+                {token && (
+                  <>
+                    <IconButton onClick={(e) => setAnchor(e.currentTarget)}>
+                      <Avatar sx={{ width: 32, height: 32 }}>
+                        {(user?.email?.[0] || "U").toUpperCase()}
+                      </Avatar>
+                    </IconButton>
+
+                    <Menu
+                      anchorEl={anchor}
+                      open={!!anchor}
+                      onClose={() => setAnchor(null)}
+                    >
+                      <MenuItem disabled>{user?.email}</MenuItem>
+
+                      <MenuItem
+                        onClick={() => {
+                          navigate("/profile");
+                          setAnchor(null);
+                        }}
+                      >
+                        My Profile
+                      </MenuItem>
+
+                      <MenuItem
+                        onClick={() => {
+                          logout();
+                          navigate("/login");
+                          setAnchor(null);
+                        }}
+                        sx={{ color: "red" }}
+                      >
+                        Logout
+                      </MenuItem>
+                    </Menu>
+                  </>
+                )}
+              </nav>
+
+              {/* MOBILE MENU BUTTON */}
+              <button
+                className="md:hidden text-2xl focus:outline-none"
+                onClick={() => setMobileOpen((prev) => !prev)}
               >
-                {mode === "light" ? <DarkModeIcon /> : <LightModeIcon />}
-              </IconButton>
+                ☰
+              </button>
+            </header>
 
-              {token && (
-                <>
-                  <IconButton
-                    onClick={(e) => setAnchor(e.currentTarget)}
-                    className="nav-icon-animate"
-                  >
-                    <Avatar sx={{ width: 32, height: 32 }}>
-                      {(user?.email?.[0] || "U").toUpperCase()}
-                    </Avatar>
-                  </IconButton>
+            {/* MOBILE DROPDOWN MENU */}
+            {mobileOpen && (
+              <div className="md:hidden bg-white dark:bg-gray-800 p-5 shadow space-y-3">
 
-                  <Menu
-                    anchorEl={anchor}
-                    open={!!anchor}
-                    onClose={() => setAnchor(null)}
-                  >
-                    <MenuItem disabled>{user?.email}</MenuItem>
+                <Link
+                  to="/dashboard"
+                  className="block py-2 text-sm"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Dashboard
+                </Link>
 
-                    <MenuItem
+                <Link
+                  to="/jobs"
+                  className="block py-2 text-sm"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Jobs
+                </Link>
+
+                <Link
+                  to="/resume"
+                  className="block py-2 text-sm"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Resume
+                </Link>
+
+                {/* Theme Toggle */}
+                <button
+                  onClick={() => {
+                    setMode(mode === "light" ? "dark" : "light");
+                    setMobileOpen(false);
+                  }}
+                  className="block py-2 text-sm"
+                >
+                  {mode === "light" ? "Dark Mode" : "Light Mode"}
+                </button>
+
+                {token && (
+                  <>
+                    <button
                       onClick={() => {
                         navigate("/profile");
-                        setAnchor(null);
+                        setMobileOpen(false);
                       }}
+                      className="block py-2 text-sm"
                     >
                       My Profile
-                    </MenuItem>
+                    </button>
 
-                    <MenuItem
+                    <button
                       onClick={() => {
                         logout();
                         navigate("/login");
-                        setAnchor(null);
+                        setMobileOpen(false);
                       }}
-                      sx={{ color: "red" }}
+                      className="block py-2 text-sm text-red-500"
                     >
                       Logout
-                    </MenuItem>
-                  </Menu>
-                </>
-              )}
-            </nav>
-          </header>
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </>
         )}
 
         {/* ROUTES */}
