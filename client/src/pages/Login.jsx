@@ -12,17 +12,29 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const submit = async (e) => {
     e.preventDefault();
     setErr("");
+    setLoading(true);
 
     try {
-      const res = await api.post("/api/auth/login", { email, password });
+      const res = await api.post(
+        "/api/auth/login",
+        { email, password },
+        { timeout: 60000 } // 60 seconds for Render wake-up
+      );
+
       await login(res.data.token);
       navigate("/dashboard");
     } catch (e) {
-      setErr(e.response?.data?.message || "Login failed");
+      if (e.code === "ECONNABORTED") {
+        setErr("Server is waking up… Try again in a moment.");
+      } else {
+        setErr(e.response?.data?.message || "Login failed");
+      }
+      setLoading(false);
     }
   };
 
@@ -42,7 +54,11 @@ export default function Login() {
           Login
         </h2>
 
-        {err && <p className="text-red-500 text-center mb-3 text-sm">{err}</p>}
+        {err && (
+          <p className="text-red-500 text-center mb-3 text-sm animate-pulse">
+            {err}
+          </p>
+        )}
 
         <form onSubmit={submit} className="space-y-5">
           <div>
@@ -85,9 +101,18 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full py-3 bg-[#315c41] hover:bg-[#264a33] text-white font-semibold rounded-lg transition"
+            disabled={loading}
+            className={`w-full py-3 flex items-center justify-center font-semibold rounded-lg transition text-white 
+              ${loading ? "bg-green-900 cursor-not-allowed" : "bg-[#315c41] hover:bg-[#264a33]"}`}
           >
-            LOGIN
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Logging in…
+              </span>
+            ) : (
+              "LOGIN"
+            )}
           </button>
         </form>
 
